@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSL Sign Language Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #webcam {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .game-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .start-game-btn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .start-game-btn:hover:not(:disabled) {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .stop-btn {
+            background: #f44336;
+            color: white;
+        }
+
+        .stop-btn:hover:not(:disabled) {
+            background: #da190b;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(244, 67, 54, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .challenge-display {
+            text-align: center;
+            padding: 30px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            color: white;
+        }
+
+        .challenge-label {
+            font-size: 18px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .challenge-word {
+            font-size: 56px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .timer {
+            font-size: 32px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .timer.warning {
+            color: #ff6b6b;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .status.waiting {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .status.playing {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.failure {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .prediction {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .prediction-main {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .confidence {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+
+        .score-display {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .score-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .api-status {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .api-status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .api-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .success-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 120px;
+            z-index: 1000;
+            animation: celebrate 1s ease-out;
+        }
+
+        @keyframes celebrate {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sign Language Challenge</h1>
+        <p class="subtitle">Show the sign within 15 seconds!</p>
+
+        <div id="apiStatus" class="api-status disconnected">
+            Checking API connection...
+        </div>
+
+        <div class="score-display">
+            <div class="score-item">
+                <div class="score-label">Correct</div>
+                <div class="score-value" id="correctScore">0</div>
+            </div>
+            <div class="score-item">
+                <div class="score-label">Wrong</div>
+                <div class="score-value" id="wrongScore">0</div>
+            </div>
+            <div class="score-item">
+                <div class="score-label">Streak</div>
+                <div class="score-value" id="streakScore">0</div>
+            </div>
+        </div>
+
+        <div class="challenge-display" style="display: none;" id="challengeDisplay">
+            <div class="challenge-label">Sign this word:</div>
+            <div class="challenge-word" id="challengeWord">-</div>
+            <div class="timer" id="timer">
+                <span>⏱️</span>
+                <span id="timeRemaining">15</span>
+                <span>seconds</span>
+            </div>
+        </div>
+
+        <div class="video-container">
+            <video id="webcam" autoplay playsinline></video>
+        </div>
+
+        <div class="game-controls">
+            <button id="startGameBtn" class="start-game-btn">Start Game</button>
+            <button id="stopBtn" class="stop-btn" disabled>Stop Game</button>
+        </div>
+
+        <div id="status" class="status waiting">
+            Click "Start Game" to begin the challenge!
+        </div>
+
+        <div id="prediction" class="prediction" style="display: none;">
+            <div class="prediction-main" id="gestureText">-</div>
+            <div class="confidence">
+                Confidence: <span id="confidenceText">0%</span>
+            </div>
+            <div class="confidence-bar">
+                <div class="confidence-fill" id="confidenceFill" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://zeqhx-msl-project.hf.space';
+        const SESSION_ID = 'game-session-' + Date.now();
+        const GAME_DURATION = 15; // seconds
+
+        let webcamStream = null;
+        let isProcessing = false;
+        let processInterval = null;
+        let gameTimer = null;
+        let timeRemaining = GAME_DURATION;
+        let availableGestures = [];
+        let currentChallenge = null;
+        let isGameActive = false;
+
+        // Score tracking
+        let correctCount = 0;
+        let wrongCount = 0;
+        let currentStreak = 0;
+
+        // DOM elements
+        const webcam = document.getElementById('webcam');
+        const startGameBtn = document.getElementById('startGameBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusDiv = document.getElementById('status');
+        const predictionDiv = document.getElementById('prediction');
+        const gestureText = document.getElementById('gestureText');
+        const confidenceText = document.getElementById('confidenceText');
+        const confidenceFill = document.getElementById('confidenceFill');
+        const apiStatus = document.getElementById('apiStatus');
+        const challengeDisplay = document.getElementById('challengeDisplay');
+        const challengeWord = document.getElementById('challengeWord');
+        const timer = document.getElementById('timer');
+        const timeRemainingSpan = document.getElementById('timeRemaining');
+        const correctScore = document.getElementById('correctScore');
+        const wrongScore = document.getElementById('wrongScore');
+        const streakScore = document.getElementById('streakScore');
+
+        // Check API connection
+        async function checkAPI() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+
+                apiStatus.className = 'api-status connected';
+                apiStatus.textContent = `API Connected (Device: ${data.device})`;
+
+                availableGestures = data.gestures;
+
+                return true;
+            } catch (error) {
+                apiStatus.className = 'api-status disconnected';
+                apiStatus.textContent = 'API Disconnected - Make sure the server is running';
+                return false;
+            }
+        }
+
+        // Start webcam
+        async function startWebcam() {
+            try {
+                webcamStream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 640, height: 480 }
+                });
+                webcam.srcObject = webcamStream;
+
+                return true;
+            } catch (error) {
+                alert('Error accessing webcam: ' + error.message);
+                return false;
+            }
+        }
+
+        // Stop webcam
+        function stopWebcam() {
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+
+            if (processInterval) {
+                clearInterval(processInterval);
+                processInterval = null;
+            }
+
+            if (gameTimer) {
+                clearInterval(gameTimer);
+                gameTimer = null;
+            }
+
+            isProcessing = false;
+            isGameActive = false;
+            startGameBtn.disabled = false;
+            stopBtn.disabled = true;
+
+            challengeDisplay.style.display = 'none';
+            predictionDiv.style.display = 'none';
+            updateStatus('waiting', 'Game stopped. Click "Start Game" to play again!');
+        }
+
+        // Reset session on backend
+        async function resetSession() {
+            try {
+                await fetch(`${API_URL}/reset?session_id=${SESSION_ID}`, {
+                    method: 'POST'
+                });
+            } catch (error) {
+                console.error('Reset error:', error);
+            }
+        }
+
+        // Start new round
+        async function startNewRound() {
+            if (availableGestures.length === 0) {
+                alert('No gestures available. Please check API connection.');
+                return;
+            }
+
+            // Reset backend session for fresh start
+            await resetSession();
+
+            // Pick random gesture
+            currentChallenge = availableGestures[Math.floor(Math.random() * availableGestures.length)];
+            challengeWord.textContent = currentChallenge;
+            challengeDisplay.style.display = 'block';
+
+            // Reset timer
+            timeRemaining = GAME_DURATION;
+            timeRemainingSpan.textContent = timeRemaining;
+            timer.classList.remove('warning');
+
+            // Start game
+            isGameActive = true;
+            isProcessing = true;
+
+            // Start processing frames immediately (no buffer)
+            processInterval = setInterval(processFrame, 200); // Process 5 frames per second
+
+            // Start countdown
+            gameTimer = setInterval(updateTimer, 1000);
+
+            updateStatus('playing', 'Show the sign! Time is ticking...');
+            predictionDiv.style.display = 'block';
+        }
+
+        // Update timer
+        function updateTimer() {
+            timeRemaining--;
+            timeRemainingSpan.textContent = timeRemaining;
+
+            if (timeRemaining <= 5) {
+                timer.classList.add('warning');
+            }
+
+            if (timeRemaining <= 0) {
+                endRound(false);
+            }
+        }
+
+        // Process frame
+        async function processFrame() {
+            if (!isProcessing) return;
+
+            try {
+                // Capture frame from webcam
+                const canvas = document.createElement('canvas');
+                canvas.width = webcam.videoWidth;
+                canvas.height = webcam.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(webcam, 0, 0);
+
+                // Convert to base64
+                const base64Image = canvas.toDataURL('image/jpeg').split(',')[1];
+
+                // Send to API
+                const response = await fetch(`${API_URL}/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        frame: base64Image,
+                        session_id: SESSION_ID
+                    })
+                });
+
+                const data = await response.json();
+                updatePrediction(data);
+            } catch (error) {
+                console.error('Processing error:', error);
+            }
+        }
+
+        // Update prediction display
+        function updatePrediction(data) {
+            if (!isGameActive) return;
+
+            // Always show predictions
+            gestureText.textContent = data.gesture.toUpperCase();
+            confidenceText.textContent = (data.confidence * 100).toFixed(1) + '%';
+            confidenceFill.style.width = (data.confidence * 100) + '%';
+
+            // Check if prediction matches challenge (with high confidence)
+            if (data.gesture.toLowerCase() === currentChallenge.toLowerCase() && data.confidence > 0.7) {
+                endRound(true);
+            }
+        }
+
+        // End round
+        function endRound(success) {
+            if (!isGameActive) return;
+
+            isGameActive = false;
+            clearInterval(gameTimer);
+            clearInterval(processInterval);
+
+            if (success) {
+                correctCount++;
+                currentStreak++;
+                updateStatus('success', `Correct! You signed "${currentChallenge}" successfully!`);
+                showSuccessAnimation();
+            } else {
+                wrongCount++;
+                currentStreak = 0;
+                updateStatus('failure', `Time's up! The word was "${currentChallenge}". Try again!`);
+            }
+
+            updateScoreDisplay();
+
+            // Start next round after 3 seconds
+            setTimeout(() => {
+                if (isProcessing) {
+                    startNewRound();
+                }
+            }, 3000);
+        }
+
+        // Show success animation
+        function showSuccessAnimation() {
+            const emoji = document.createElement('div');
+            emoji.className = 'success-animation';
+            emoji.textContent = '🎉';
+            document.body.appendChild(emoji);
+            setTimeout(() => emoji.remove(), 1000);
+        }
+
+        // Update score display
+        function updateScoreDisplay() {
+            correctScore.textContent = correctCount;
+            wrongScore.textContent = wrongCount;
+            streakScore.textContent = currentStreak;
+        }
+
+        // Update status
+        function updateStatus(type, message) {
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+        }
+
+        // Start game button
+        startGameBtn.addEventListener('click', async () => {
+            const apiConnected = await checkAPI();
+            if (!apiConnected) {
+                alert('Cannot start game. API is not connected.');
+                return;
+            }
+
+            const webcamStarted = await startWebcam();
+            if (!webcamStarted) return;
+
+            startGameBtn.disabled = true;
+            stopBtn.disabled = false;
+
+            updateStatus('playing', 'Starting game...');
+
+            // Wait for webcam to be ready
+            setTimeout(() => {
+                startNewRound();
+            }, 500);
+        });
+
+        // Stop button
+        stopBtn.addEventListener('click', stopWebcam);
+
+        // Initialize
+        checkAPI();
+        setInterval(checkAPI, 10000); // Check API every 10 seconds
+    </script>
+</body>
+</html>
